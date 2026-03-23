@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ES2022",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022"],
+    "types": ["@cloudflare/workers-types"],
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "experimentalDecorators": true,
+    "useDefineForClassFields": false,
+    "baseUrl": ".",
+    "paths": {
+      "agents": ["./node_modules/agents/dist/index.d.ts"],
+      "agents/*": ["./node_modules/agents/dist/*.d.ts"]
+    }
+  },
+  "include": ["src/**/*.ts"]
+}

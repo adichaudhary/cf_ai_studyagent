@@ -1,23 +1,19 @@
-# cf_ai_researchagent
+# cf_ai_studyagent
 
-An AI-powered research assistant built on Cloudflare's full-stack edge platform.
+An AI-powered study assistant built on Cloudflare's full-stack edge platform.
 
 ## What it does
 
-ResearchAgent lets users ask research questions in natural language. For each query the
-agent calls the Workers AI web-search tool to fetch current information, synthesizes the
-results with Llama 3.3, and streams back a clear answer. Every query and its summary are
-stored in the Durable Object's `researchHistory` so the sidebar always shows past searches.
-Conversation context is preserved across turns for follow-up questions.
+StudyAgent is a per-user tutoring chatbot. You set a topic, then chat with the agent — it answers questions, explains concepts, and asks follow-up questions to test your understanding. Conversation state is held in a Durable Object so context is preserved across messages. Every session is logged to D1 so the sidebar shows your recent study topics.
 
 ## Cloudflare products used
 
 | Product | Role |
 |---|---|
-| **Workers AI** (Llama 3.3 70B fp8) | LLM inference + web-search tool |
-| **Agents SDK** | `Agent` class with `onRequest` HTTP routing on the DO |
-| **Durable Objects** | Per-user agent state (messages, researchHistory) |
-| **D1** | Session persistence (query log) |
+| **Workers AI** (Llama 3.3 70B fp8-fast) | LLM inference |
+| **Agents SDK** | `Agent` class with `onRequest` HTTP routing on the Durable Object |
+| **Durable Objects** | Per-user agent state (messages, current topic, session count) |
+| **D1** | Session persistence (recent topics history) |
 | **Workers Assets** | Hosts the vanilla HTML/CSS/JS frontend |
 
 ## Architecture
@@ -27,17 +23,11 @@ Browser (Workers Assets)
     │
     │  HTTP (CORS)
     ▼
-Cloudflare Worker  ─── POST /agent/:userId/chat              ──►  StudyAgent DO
-  (fetch handler)  ─── GET  /agent/:userId/history           ──►    │  state: {messages, researchHistory}
-                   ─── GET  /agent/:userId/research-history  ──►    │  env.AI  ──► Workers AI (Llama 3.3 + web_search)
-                                                                     │  env.DB  ──► D1 (sessions table)
+Cloudflare Worker  ─── POST /agent/:userId/chat          ──►  StudyAgent DO
+  (fetch handler)  ─── POST /agent/:userId/topic         ──►    │  state: {topic, messages, sessionCount}
+                   ─── GET  /agent/:userId/history        ──►    │  env.AI  ──► Workers AI (Llama 3.3)
+                   ─── GET  /agent/:userId/recent-topics  ──►    │  env.DB  ──► D1 (sessions table)
 ```
-
-### Agentic loop
-
-1. User message → first AI call with `web_search_20250305` tool attached
-2. If the model returns a `tool_use` block, a second AI call synthesizes the search results
-3. Final reply saved to `researchHistory` in Durable Object state
 
 ## Prerequisites
 
@@ -53,17 +43,17 @@ cd worker
 npm install
 
 # 2. Create the D1 database (copy the database_id into wrangler.toml)
-wrangler d1 create researchagent-db
+wrangler d1 create studyagent-db
 
 # 3. Run the migration
-wrangler d1 execute researchagent-db --file=worker/migrations/001_init.sql
+wrangler d1 execute studyagent-db --file=migrations/001_init.sql --local
 
 # 4. Start the worker (from repo root)
 cd ..
 wrangler dev
 
 # 5. Open frontend/index.html in your browser.
-#    WORKER_URL defaults to http://localhost:8787
+#    WORKER_URL defaults to http://localhost:8787 when on localhost
 ```
 
 ## Deploy
@@ -73,8 +63,7 @@ wrangler dev
 wrangler deploy
 ```
 
-After deploying, the frontend is served from the same worker origin — no separate
-Pages project needed.
+The frontend is served from the same worker origin — no separate Pages project needed.
 
 ## Bindings (wrangler.toml)
 

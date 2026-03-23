@@ -1,6 +1,6 @@
 # PROMPTS.md
 
-Documents every Claude Code prompt used to build `cf_ai_studybuddy`, in order.
+Documents every Claude Code prompt used to build `cf_ai_studyagent`, in order.
 
 ---
 
@@ -10,7 +10,7 @@ Documents every Claude Code prompt used to build `cf_ai_studybuddy`, in order.
 
 **Prompt text:**
 
-> Create a new Cloudflare AI agent project called `cf_ai_studybuddy`.
+> Create a new Cloudflare AI agent project called `cf_ai_studyagent`.
 >
 > Scaffold the following structure:
 > - `/worker` — a Cloudflare Worker using the `agents` SDK (npm i agents) that will serve as the backend
@@ -127,7 +127,7 @@ Documents every Claude Code prompt used to build `cf_ai_studybuddy`, in order.
 
 **Prompt text:**
 
-> Write a complete `README.md` for the project `cf_ai_studybuddy` that includes:
+> Write a complete `README.md` for the project `cf_ai_studyagent` that includes:
 >
 > 1. Project overview — what it does and which Cloudflare products it uses (Workers AI / Llama 3.3, Agents SDK / Durable Objects, D1, Pages)
 > 2. Architecture diagram as ASCII art showing: Frontend (Pages) → Worker → [Durable Object (state + LLM calls), D1 (session history)]

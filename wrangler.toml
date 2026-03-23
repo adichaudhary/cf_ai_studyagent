@@ -10,16 +10,16 @@ binding = "AI"
 # ── Durable Objects ──────────────────────────────────────────────────
 [[durable_objects.bindings]]
 name = "STUDY_AGENT"
-class_name = "ResearchAgent"
+class_name = "StudyAgent"
 
 [[migrations]]
 tag = "v1"
-new_sqlite_classes = ["ResearchAgent"]
+new_sqlite_classes = ["StudyAgent"]
 
 # ── D1 Database ───────────────────────────────────────────────────────
 [[d1_databases]]
 binding = "DB"
-database_name = "researchagent-db"
+database_name = "studyagent-db"
 database_id = "00e0d4fe-bfd0-49d4-af66-f0bcb35d7acf"
 
 # ── Static assets (served from frontend/) ────────────────────────────
