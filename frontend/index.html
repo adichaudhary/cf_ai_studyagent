@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>StudyAgent</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #0d0d0d;
+      --surface:  #161616;
+      --border:   #2a2a2a;
+      --orange:   #ff6a00;
+      --orange-d: #cc5500;
+      --white:    #e8e8e8;
+      --muted:    #888;
+      --sidebar-w: 220px;
+      --header-h:  52px;
+      --input-h:   72px;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--white);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    #shell {
+      display: grid;
+      grid-template-columns: var(--sidebar-w) 1fr;
+      grid-template-rows: var(--header-h) 1fr var(--input-h);
+      height: 100dvh;
+    }
+
+    /* Sidebar */
+    #sidebar {
+      grid-row: 1 / 4;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      padding: 1rem 0.75rem;
+      gap: 0.5rem;
+      overflow: hidden;
+    }
+
+    #sidebar h2 {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      margin-bottom: 0.25rem;
+    }
+
+    #topic-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    #topic-list li {
+      padding: 0.35rem 0.5rem;
+      border-radius: 4px;
+      color: var(--muted);
+      cursor: pointer;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    #topic-list li:hover { background: #222; color: var(--white); }
+    #topic-list li.empty { font-style: italic; cursor: default; }
+
+    /* Header */
+    #header {
+      grid-column: 2;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 0 1.25rem;
+    }
+
+    #header .logo { font-weight: 700; font-size: 15px; color: var(--orange); white-space: nowrap; }
+    #header .sep { color: var(--border); }
+
+    #topic-display {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      overflow: hidden;
+    }
+
+    #topic-label { color: var(--muted); font-size: 11px; white-space: nowrap; }
+
+    #topic-value {
+      color: var(--white);
+      cursor: pointer;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      border-bottom: 1px dashed var(--border);
+      padding-bottom: 1px;
+    }
+
+    #topic-value:hover { border-color: var(--orange); color: var(--orange); }
+
+    #topic-input {
+      display: none;
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid var(--orange);
+      color: var(--white);
+      font: inherit;
+      outline: none;
+      width: 200px;
+    }
+
+    /* Chat */
+    #chat {
+      grid-column: 2;
+      overflow-y: auto;
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      scroll-behavior: smooth;
+    }
+
+    #chat::-webkit-scrollbar { width: 6px; }
+    #chat::-webkit-scrollbar-track { background: transparent; }
+    #chat::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    .msg {
+      max-width: 72%;
+      padding: 0.6rem 0.9rem;
+      border-radius: 6px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .msg.user {
+      align-self: flex-end;
+      background: var(--orange);
+      color: #fff;
+      border-bottom-right-radius: 2px;
+    }
+
+    .msg.assistant {
+      align-self: flex-start;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--white);
+      border-bottom-left-radius: 2px;
+    }
+
+    .msg.typing {
+      align-self: flex-start;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-style: italic;
+    }
+
+    .dots::after {
+      content: '';
+      animation: dots 1.2s steps(3, end) infinite;
+    }
+    @keyframes dots {
+      0%   { content: ''; }
+      33%  { content: '.'; }
+      66%  { content: '..'; }
+      100% { content: '...'; }
+    }
+
+    /* Input bar */
+    #input-bar {
+      grid-column: 2;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.75rem 1.25rem;
+    }
+
+    #msg-input {
+      flex: 1;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--white);
+      font: inherit;
+      padding: 0.5rem 0.75rem;
+      resize: none;
+      outline: none;
+      transition: border-color 0.15s;
+      max-height: 120px;
+      overflow-y: auto;
+    }
+
+    #msg-input:focus { border-color: var(--orange); }
+
+    #send-btn {
+      background: var(--orange);
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      font: inherit;
+      font-weight: 700;
+      padding: 0.5rem 1rem;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s;
+    }
+
+    #send-btn:hover:not(:disabled) { background: var(--orange-d); }
+    #send-btn:disabled { background: #444; cursor: not-allowed; }
+  </style>
+</head>
+<body>
+<div id="shell">
+
+  <aside id="sidebar">
+    <h2>Recent Topics</h2>
+    <ul id="topic-list">
+      <li class="empty">loading...</li>
+    </ul>
+  </aside>
+
+  <header id="header">
+    <span class="logo">StudyAgent</span>
+    <span class="sep">|</span>
+    <div id="topic-display">
+      <span id="topic-label">topic:</span>
+      <span id="topic-value" title="Click to change topic">(none — click to set)</span>
+      <input id="topic-input" type="text" maxlength="80" placeholder="Enter topic…" />
+    </div>
+  </header>
+
+  <main id="chat"></main>
+
+  <footer id="input-bar">
+    <textarea id="msg-input" rows="1" placeholder="Ask anything…"></textarea>
+    <button id="send-btn">Send</button>
+  </footer>
+
+</div>
+
+<script>
+  window.WORKER_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+    ? "http://localhost:8787"
+    : "";
+
+  let userId = localStorage.getItem("sa_userId");
+  if (!userId) {
+    userId = "user_" + crypto.randomUUID().replace(/-/g, "").slice(0, 12);
+    localStorage.setItem("sa_userId", userId);
+  }
+
+  let currentTopic = "";
+
+  const chat       = document.getElementById("chat");
+  const msgInput   = document.getElementById("msg-input");
+  const sendBtn    = document.getElementById("send-btn");
+  const topicValue = document.getElementById("topic-value");
+  const topicInput = document.getElementById("topic-input");
+  const topicList  = document.getElementById("topic-list");
+
+  function apiUrl(path) {
+    return `${window.WORKER_URL}/agent/${encodeURIComponent(userId)}${path}`;
+  }
+
+  function appendMsg(role, text) {
+    const div = document.createElement("div");
+    div.className = `msg ${role}`;
+    div.textContent = text;
+    chat.appendChild(div);
+    chat.scrollTop = chat.scrollHeight;
+    return div;
+  }
+
+  function showTyping() {
+    const div = document.createElement("div");
+    div.className = "msg typing";
+    div.innerHTML = '<span class="dots">thinking</span>';
+    chat.appendChild(div);
+    chat.scrollTop = chat.scrollHeight;
+    return div;
+  }
+
+  function setTopicDisplay(topic) {
+    currentTopic = topic;
+    topicValue.textContent = topic || "(none — click to set)";
+  }
+
+  async function loadRecentTopics() {
+    try {
+      const res = await fetch(apiUrl("/recent-topics"));
+      if (!res.ok) throw new Error();
+      const topics = await res.json();
+      renderTopicList(topics);
+    } catch {
+      topicList.innerHTML = '<li class="empty">—</li>';
+    }
+  }
+
+  function renderTopicList(topics) {
+    if (!topics || topics.length === 0) {
+      topicList.innerHTML = '<li class="empty">no history yet</li>';
+      return;
+    }
+    topicList.innerHTML = "";
+    topics.forEach((t) => {
+      const li = document.createElement("li");
+      li.textContent = t;
+      li.title = t;
+      li.addEventListener("click", () => switchTopic(t));
+      topicList.appendChild(li);
+    });
+  }
+
+  topicValue.addEventListener("click", () => {
+    topicValue.style.display = "none";
+    topicInput.style.display = "inline";
+    topicInput.value = currentTopic;
+    topicInput.focus();
+  });
+
+  async function commitTopic() {
+    const newTopic = topicInput.value.trim();
+    topicInput.style.display = "none";
+    topicValue.style.display = "";
+    if (!newTopic || newTopic === currentTopic) return;
+
+    setTopicDisplay(newTopic);
+    chat.innerHTML = "";
+
+    try {
+      await fetch(apiUrl("/topic"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ topic: newTopic }),
+      });
+      loadRecentTopics();
+    } catch {
+      appendMsg("assistant", "[Error setting topic — check worker connection]");
+    }
+  }
+
+  topicInput.addEventListener("blur", commitTopic);
+  topicInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); topicInput.blur(); }
+    if (e.key === "Escape") { topicInput.value = currentTopic; topicInput.blur(); }
+  });
+
+  async function switchTopic(topic) {
+    topicInput.value = topic;
+    await commitTopic();
+  }
+
+  async function sendMessage() {
+    const text = msgInput.value.trim();
+    if (!text) return;
+
+    appendMsg("user", text);
+    msgInput.value = "";
+    msgInput.style.height = "auto";
+    sendBtn.disabled = true;
+
+    const indicator = showTyping();
+
+    try {
+      const res = await fetch(apiUrl("/chat"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: text }),
+      });
+
+      indicator.remove();
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({ error: "Unknown error" }));
+        appendMsg("assistant", `[Error: ${errData.error || res.statusText}]`);
+      } else {
+        const { reply } = await res.json();
+        appendMsg("assistant", reply);
+      }
+    } catch (e) {
+      indicator.remove();
+      appendMsg("assistant", `[Network error: ${e.message}]`);
+    } finally {
+      sendBtn.disabled = false;
+      msgInput.focus();
+    }
+  }
+
+  msgInput.addEventListener("input", () => {
+    msgInput.style.height = "auto";
+    msgInput.style.height = msgInput.scrollHeight + "px";
+  });
+
+  msgInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+  });
+
+  sendBtn.addEventListener("click", sendMessage);
+
+  loadRecentTopics();
+  msgInput.focus();
+</script>
+</body>
+</html>
