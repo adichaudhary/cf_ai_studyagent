@@ -13,8 +13,8 @@ name = "STUDY_AGENT"
 class_name = "StudyAgent"
 
 [[migrations]]
-tag = "v1"
-new_sqlite_classes = ["StudyAgent"]
+tag = "v2"
+renamed_classes = [{from = "ResearchAgent", to = "StudyAgent"}]
 
 # ── D1 Database ───────────────────────────────────────────────────────
 [[d1_databases]]
